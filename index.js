@@ -22,20 +22,18 @@ module.exports = function (content) {
 
   this.cacheable && this.cacheable();
   const loader = this;
-  const options = Object.assign({ strict: '[markup-inline]' }, loaderUtils.getOptions(this));
+  const options = loaderUtils.getOptions(this);
   const strict = options.strict.replace(/\[(data-)?([\w-]+)\]/, '$2');
   content = content.replace(PATTERN, replacer);
   return content;
 
   function replacer(matched, tagName, preAttributes, fileName, postAttributes) {
 
-    const svgo = new SVGO(options.svgo || SVGOConfiguration);
-
     let cleanupIDsIndex = findCleanUpIds(options.svgo.plugins);
     if(options && options.svgo && options.svgo.plugins && cleanupIDsIndex !== -1) {
       options.svgo.plugins[cleanupIDsIndex]['cleanupIDs']['prefix'] = 'svg-' + hash(fileName);
     }
-
+    const svgo = new SVGO(options.svgo || SVGOConfiguration);
     const isSvgFile = path.extname(fileName).toLowerCase() === '.svg';
     const isImg = tagName.toLowerCase() === 'img';
     const meetStrict = !strict || new RegExp(`[^\w-](data-)?${strict}[^\w-]`).test(matched);
