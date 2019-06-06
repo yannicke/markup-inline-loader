@@ -4,6 +4,7 @@ const PATTERN = /<(svg|img|math)\s+([^>]*?)src\s*=\s*"([^>]*?)"([^>]*?)\/?>/gi;
 
 const fs = require('fs');
 const path = require('path');
+const hash = require('string-hash');
 const SVGO = require('svgo');
 const loaderUtils = require('loader-utils');
 
@@ -16,16 +17,25 @@ const SVGOConfiguration = {
 };
 
 module.exports = function (content) {
+
+  
+
   this.cacheable && this.cacheable();
   const loader = this;
   const options = Object.assign({ strict: '[markup-inline]' }, loaderUtils.getOptions(this));
-  const svgo = new SVGO(options.svgo || SVGOConfiguration);
   const strict = options.strict.replace(/\[(data-)?([\w-]+)\]/, '$2');
-
   content = content.replace(PATTERN, replacer);
   return content;
 
   function replacer(matched, tagName, preAttributes, fileName, postAttributes) {
+
+    const svgo = new SVGO(options.svgo || SVGOConfiguration);
+
+    let cleanupIDsIndex = findCleanUpIds(options.svgo.plugins);
+    if(options && options.svgo && options.svgo.plugins && cleanupIDsIndex !== -1) {
+      options.svgo.plugins[cleanupIDsIndex]['cleanupIDs']['prefix'] = 'svg-' + hash(fileName);
+    }
+
     const isSvgFile = path.extname(fileName).toLowerCase() === '.svg';
     const isImg = tagName.toLowerCase() === 'img';
     const meetStrict = !strict || new RegExp(`[^\w-](data-)?${strict}[^\w-]`).test(matched);
@@ -44,5 +54,15 @@ module.exports = function (content) {
       });
     }
     return fileContent.replace(/^<(svg|math)/, '<$1 ' + preAttributes + postAttributes + ' ');
+  }
+
+  function findCleanUpIds(table) {
+    let index = -1;
+    for(let i=0;i<table.length;i++) {
+      if(table[i]['cleanupIDs']) {
+        index = i;
+      }
+    }
+    return index;
   }
 };
