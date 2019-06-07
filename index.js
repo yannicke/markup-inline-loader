@@ -22,7 +22,8 @@ module.exports = function (content) {
 
   this.cacheable && this.cacheable();
   const loader = this;
-  const options = loaderUtils.getOptions(this);
+  //const options = Object.assign({ strict: '[markup-inline]' }, loaderUtils.getOptions(this));
+  const options = Object.assign({ strict: '' }, loaderUtils.getOptions(this)); //Remove strict mode
   const strict = options.strict.replace(/\[(data-)?([\w-]+)\]/, '$2');
   content = content.replace(PATTERN, replacer);
   return content;
